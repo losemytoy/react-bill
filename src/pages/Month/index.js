@@ -1,10 +1,11 @@
 import {DatePicker, NavBar} from 'antd-mobile'
 import './index.scss'
-import {useMemo, useState} from "react";
+import {useEffect, useMemo, useState} from "react";
 import classNames from "classnames";
 import dayjs from "dayjs";
 import {useSelector} from "react-redux";
 import _ from "lodash";
+import DayBill from "./components/DayBill";
 
 const Month = () => {
   //按月做数据分组
@@ -21,7 +22,7 @@ const Month = () => {
   })
   const [currentMonthList, setMonthList] = useState([]);
 
-  const monthResult= useMemo(() => {
+  const monthResult = useMemo(() => {
     const pay = currentMonthList.filter(item => item.type === 'pay').reduce((a, c) => a + c.money, 0)
     const income = currentMonthList.filter(item => item.type === 'income').reduce((a, c) => a + c.money, 0)
     return {
@@ -31,11 +32,25 @@ const Month = () => {
     }
   }, [currentMonthList]);
 
+  useEffect(() => {
+    const nowDate = dayjs(new Date()).format('YYYY-MM')
+    setMonthList(monthGroup[nowDate] ?? [])
+  }, [monthGroup]);
+
+  const dayGroup = useMemo(() => {
+    const groupData = _.groupBy(currentMonthList, item => dayjs(item.date).format('YYYY-MM-DD'))
+    const keys = Object.keys(groupData)
+    return {
+      groupData,
+      keys
+    }
+  }, [currentMonthList]);
+
   const onConfirm = (date) => {
     const formatDate = dayjs(date).format('YYYY-MM')
     setCurrentDate(formatDate)
     setDateVisible(false)
-    setMonthList(monthGroup[formatDate]??[])
+    setMonthList(monthGroup[formatDate] ?? [])
   }
   return (
     <div className="monthlyBill">
@@ -78,6 +93,12 @@ const Month = () => {
             max={new Date()}
           />
         </div>
+        {
+          dayGroup.keys.map(key => {
+            return <DayBill date={key} billList={dayGroup.groupData[key]}/>
+          })
+        }
+
       </div>
     </div>
   )
